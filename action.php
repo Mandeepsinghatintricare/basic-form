@@ -54,6 +54,8 @@ function printOutput($result){
             
             echo "$output";
 }
+
+
     require('dbconnection.php');
     if (isset($_GET['action'])) {
         if ($_GET['action'] == "search") {
@@ -111,8 +113,8 @@ function printOutput($result){
         }
 
         if ($_GET['action']=="new") {
-            $fname = mysqli_real_escape_string($conn,$_POST['fName']);
-            $lname = mysqli_real_escape_string($conn,$_POST['lName']);
+            $fname = mysqli_real_escape_string($conn,$_POST['fname']);
+            $lname = mysqli_real_escape_string($conn,$_POST['lname']);
             $email = mysqli_real_escape_string($conn,$_POST['email']);
             $gender = mysqli_real_escape_string($conn,$_POST['gender']);
             $hobby = array();
@@ -127,7 +129,7 @@ function printOutput($result){
             }
             $serialhobby = serialize($hobby);
             $address = mysqli_real_escape_string($conn,$_POST['address']);
-            
+
             $extension = stristr($_FILES['image']['name'], ".");
             $filename = $fname.$lname.$extension;
             $filename = str_replace(".", "-T-".date("Y_m_d_H_i").".", ($filename));
@@ -135,20 +137,22 @@ function printOutput($result){
             $folder = "image/".$filename;
 
             if(move_uploaded_file($tempname, $folder)){
-                echo "image moved";
-                echo "<img src=\"image/".$filename."\">";
+                // echo "image moved";
+                // echo "<img src=\"image/".$filename."\">";
             }
             else{
                     $msg = "Failed to upload image";
             }
+            // echo ($fname.$lname.$email.$gender.$serialhobby.$address.$filename);
             if ($fname !== "" && $email !== "") {
                 $sql = "INSERT INTO `user-data`(`fname`, `lname`, `email`, `gender`, `hobby`, `address`, `image`) VALUES ('$fname','$lname','$email','$gender','$serialhobby','$address','$filename')";
                 if (mysqli_query($conn, $sql)) {
-                    echo "New record created successfully";
-                    header('Location:index.php');
+                    // Success
+                    $sql = "SELECT * FROM `user-data`";
+                    $result = mysqli_query($conn, $sql);
+                    printOutput($result);
                 } else {
                     echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                    header('Location:form.php');
                 }
             }
             else{
