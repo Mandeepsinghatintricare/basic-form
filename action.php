@@ -39,7 +39,7 @@ function printOutput($result){
                             <img src=\"image/". $value['image']."\">
                         </td>
                         <td>
-                            <button type=\"button\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#editModal\">
+                            <button onclick=\"editData(". $value['id'].")\" type=\"button\" class=\"btn btn-primary\">
                           Edit
                         </button>
                         <button type=\"button\" class=\"btn btn-primary\" onclick=\"deleteUser(". $value['id'].")\">
@@ -53,6 +53,12 @@ function printOutput($result){
                 </table>";
             
             echo "$output";
+}
+
+function clean($string) {
+   $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
+
+   return preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
 }
 
 
@@ -118,6 +124,10 @@ function printOutput($result){
             $email = mysqli_real_escape_string($conn,$_POST['email']);
             $gender = mysqli_real_escape_string($conn,$_POST['gender']);
             $hobby = array();
+
+            $fname = clean($fname);
+            $lname = clean($lname);
+
             if (isset($_POST['hobby1'])) {
                 array_push($hobby,($_POST['hobby1']));
             }
@@ -156,7 +166,7 @@ function printOutput($result){
                 }
             }
             else{
-                header('Location:form.php');
+                // Error
             }
             mysqli_close($conn);
             unset($_POST['fname']);
@@ -167,76 +177,83 @@ function printOutput($result){
         }
 
         elseif ($_GET['action'] == "update") {
-            if (isset($_GET['id'])) {
-                $imgcount=1;
-                $id = $_GET['id'];
-                $fname = mysqli_real_escape_string($conn,$_POST['fName']);
-                $lname = mysqli_real_escape_string($conn,$_POST['lName']);
-                $email = mysqli_real_escape_string($conn,$_POST['email']);
-                $gender = mysqli_real_escape_string($conn,$_POST['gender']);
-                $hobby = array();
-                if (isset($_POST['hobby1'])) {
-                    array_push($hobby,($_POST['hobby1']));
-                }
-                if (isset($_POST['hobby2'])) {
-                    array_push($hobby,($_POST['hobby2']));
-                }
-                if (isset($_POST['hobby3'])) {
-                    array_push($hobby,($_POST['hobby3']));
-                }
-                $serialhobby = serialize($hobby);
-                $address = mysqli_real_escape_string($conn,$_POST['address']);
-                if ($_FILES['image']['name'] !== "") {
-                    $extension = stristr($_FILES['image']['name'], ".");
-                    $filename = $fname.$lname.$extension;
-                    $filename = str_replace(".", "-T-".date("Y_m_d_H_i").".", ($filename));
-                    $tempname = ($_FILES['image']['tmp_name']);
-                    $folder = "image/".$filename;
 
-                    if(move_uploaded_file($tempname, $folder)){
-                    echo "image moved";
-                    echo "<img src=\"image/".$filename."\">";
-                    $imgcount = 0;
-                    }
-                    else{
-                    $msg = "Failed to upload image";
-                    }
+            $id = $_POST['userId'];
+            $sql = "SELECT * FROM `user-data` WHERE id = $id";
+            $result = mysqli_query($conn, $sql);
+            if (mysqli_fetch_array($result)) {
+                $user = mysqli_fetch_array($result);
+                foreach ($result as $key => $value) {
+                    $value['hobby']=unserialize($value['hobby']);
+                    echo json_encode($value);
                 }
-                if ($fname !== "" && $email !== "") {
-                    if ($imgcount == 0) {
-                       $sql = "UPDATE `user-data` SET `fname`='$fname',`lname`='$lname',`email`='$email',`gender`='$gender',`hobby`='$serialhobby',`address`='$address',`image`='$filename' WHERE id = $id";
-                        if (mysqli_query($conn, $sql)) {
-                            echo "New record created successfully";
-                            header('Location:index.php');
-                        } else {
-                            echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                            header('Location:form.php');
-                        }
-                    }
-                    else{
-                        $sql = "UPDATE `user-data` SET `fname`='$fname',`lname`='$lname',`email`='$email',`gender`='$gender',`hobby`='$serialhobby',`address`='$address' WHERE id = $id";
-                        if (mysqli_query($conn, $sql)) {
-                            echo "New record created successfully";
-                            header('Location:index.php');
-                        } else {
-                            echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                            header('Location:form.php');
-                        }
+            }
+        }
+
+        if ($_GET['action']=="edit") {
+
+            $imgcount=1;
+            $id = mysqli_real_escape_string($conn,$_POST['userId']);;
+            $fname = mysqli_real_escape_string($conn,$_POST['fname']);
+            $lname = mysqli_real_escape_string($conn,$_POST['lname']);
+            $email = mysqli_real_escape_string($conn,$_POST['email']);
+            $gender = mysqli_real_escape_string($conn,$_POST['gender']);
+            $fname = clean($fname);
+            $lname = clean($lname);
+            if ($_POST['hobby'] != "") {
+                $hobby = array($_POST['hobby']);
+                $serialhobby = serialize($hobby);
+            }
+            $address = mysqli_real_escape_string($conn,$_POST['address']);
+            if ($_FILES['image']['name'] !== "") {
+                $extension = stristr($_FILES['image']['name'], ".");
+                $filename = $fname.$lname.$extension;
+                $filename = str_replace(".", "-T-".date("Y_m_d_H_i").".", ($filename));
+                $tempname = ($_FILES['image']['tmp_name']);
+                $folder = "image/".$filename;
+
+                if(move_uploaded_file($tempname, $folder)){
+                // Success
+                $imgcount = 0;
+                }
+                else{
+                $msg = "Failed to upload image";
+                }
+            }
+            if ($fname !== "" && $email !== "") {
+                if ($imgcount == 0) {
+                   $sql = "UPDATE `user-data` SET `fname`='$fname',`lname`='$lname',`email`='$email',`gender`='$gender',`hobby`='$serialhobby',`address`='$address',`image`='$filename' WHERE id = $id";
+                    if (mysqli_query($conn, $sql)) {
+                        $sql = "SELECT * FROM `user-data`";
+                        $result = mysqli_query($conn, $sql);
+                        printOutput($result);
+                        // Success
+                    } else {
+                        echo "Error: " . $sql . "<br>" . mysqli_error($conn);
                     }
                 }
                 else{
-                    header('Location:form.php');
+                    $sql = "UPDATE `user-data` SET `fname`='$fname',`lname`='$lname',`email`='$email',`gender`='$gender',`hobby`='$serialhobby',`address`='$address' WHERE id = $id";
+                    if (mysqli_query($conn, $sql)) {
+                        $sql = "SELECT * FROM `user-data`";
+                        $result = mysqli_query($conn, $sql);
+                        printOutput($result);
+                        // Success
+                    } else {
+                        echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+                        //  Error
+                    }
                 }
-                mysqli_close($conn);
-                unset($_POST['fname']);
-                unset($_POST['lname']);
-                unset($_POST['email']);
-                unset($_POST['gender']);
-                unset($_POST['address']);
             }
             else{
-                header("location:index.php");
+                // error
             }
+            mysqli_close($conn);
+            unset($_POST['fname']);
+            unset($_POST['lname']);
+            unset($_POST['email']);
+            unset($_POST['gender']);
+            unset($_POST['address']);
         }
     }
 ?>

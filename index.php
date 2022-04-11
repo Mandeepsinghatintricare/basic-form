@@ -1,9 +1,7 @@
-<?php
-    require('dbconnection.php');
-    $sql = "SELECT * FROM `user-data`";
-    $result = mysqli_query($conn, $sql);;
-    mysqli_close($conn);
-?>
+<?php 	require('dbconnection.php');
+    	$sql = "SELECT * FROM `user-data`";
+    	$result = mysqli_query($conn, $sql);;
+    	mysqli_close($conn); ?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -73,8 +71,8 @@
 	                success: function(data) {
 	                      
 	                    // Ajax call completed successfully
-	                    alert("Form Submited Successfully");
 	                    document.getElementById('output').innerHTML = (data);
+	                   	alert("Form Submited Successfully");
 	                    document.getElementById("newDataForm").reset();
 	                    $('#newModal').modal('hide');
 	                },
@@ -88,15 +86,72 @@
 	        });
 	    });
 
-	    (() => {
+        function editData(id){
+        	let userId = id;
+            $.ajax({
+                type: "POST",
+                url: "action.php?action=update",
+                data: {userId : userId},
+                success: function(data) {
+                    // console.log(data);
+                    let result = ($.parseJSON(data));
+                    // console.log(result);
+                    // Ajax call completed successfully
+                    $('#editModal').modal('show');
+                    document.getElementById('userId').value = (result['id']);
+                    document.getElementById('fnameNew').value = (result['fname']);
+                    document.getElementById('lnameNew').value = (result['lname']);
+                    document.getElementById('emailNew').value = (result['email']);
+                    if (result['gender']=="Male") {
+                    	document.getElementById('maleNew').checked = true;
+                    }
+                    else if (result['gender']=="Female") {
+                    	document.getElementById('femaleNew').checked = true;
+                    }
+                    else if (result['gender']=="Others"){
+                    	document.getElementById('otherNew').checked = true;
+                    }
+                    if(jQuery.inArray("Travelling", result['hobby']) !== -1){
+                    	document.getElementById("travellingNew").checked = true;
+                    }
+                    if(jQuery.inArray("Reading", result['hobby']) !== -1){
+                    	document.getElementById("readingNew").checked = true;
+                    }
+                    if(jQuery.inArray("Swimming", result['hobby']) !== -1){
+                    	document.getElementById("swimmingNew").checked = true;
+                    }
+                    document.getElementById('inputAddressNew').value = (result['address']);
+                    // document.getElementById('imageNew').value = (result['image']);
+                    // $('#newModal').modal('hide');
+                },
+                error: function(data) {
+                      
+                    // Some error in ajax call
+                    alert("some Error");
+                    // document.getElementById('output').innerHTML = this.responseText;
+                }
+            });
+        	// $('#editModal').modal('show');
+        }
+
+        $(() => {
 	        // function will get executed 
 	        // on click of submit button
-	        $("#submitButtonNew").click(function(ev) {
-	        	let formData = new FormData(document.getElementById("newDataForm"));
+	        $("#submitButtonEdit").click(function(ev) {
+	        	let formData = new FormData(document.getElementById("editDataForm"));
+	        	let hobby = [];  
+	           	$('.newHobby').each(function(){  
+	                if($(this).is(":checked"))  
+	                {  
+	                     hobby.push($(this).val());  
+	                }  
+	           }); 
+	           formData.append('hobby', hobby);
+	           
 	         	ev.preventDefault();
 	            $.ajax({
 	                type: "POST",
-	                url: "action.php?action=new",
+	                url: "action.php?action=edit",
 	                enctype: 'multipart/form-data',
 	                processData: false,  // do not process the data as url encoded params
 	                cache: false,
@@ -104,11 +159,12 @@
 	                data: formData,
 	                success: function(data) {
 	                      
+	                    // console.log(data);
 	                    // Ajax call completed successfully
-	                    alert("Form Submited Successfully");
 	                    document.getElementById('output').innerHTML = (data);
-	                    document.getElementById("newDataForm").reset();
-	                    $('#newModal').modal('hide');
+	                   	alert("Form Updated Successfully");
+	                    document.getElementById("editDataForm").reset();
+	                    $('#editModal').modal('hide');
 	                },
 	                error: function(data) {
 	                      
@@ -120,22 +176,10 @@
 	        });
 	    });
 
-        // function editUserData(id){
-        //     let confirmDelete = confirm("Do You Want to delete User Record of user no "+id);
-        //     if (confirmDelete) {
-        //         var query = document.getElementById('search').value;
-        //         console.log(query);
-        //         var xmlhttp = new XMLHttpRequest();
-        //                         xmlhttp.onreadystatechange = function(){
-        //                 if(this.readyState == 4 && this.status == 200){
-        //                     document.getElementById('output').innerHTML = this.responseText;
-        //                 }
-        //             }
-        //         xmlhttp.open("GET", "action.php?action=update&id="+id, true);
-        //         xmlhttp.send();
-        //         console.log(id);
-        //     }
-        // }
+        function closeEdit(){
+        	document.getElementById("editDataForm").reset();
+        }
+	    
     </script>
     <style type="text/css">
         img{width: 100px;}
@@ -195,11 +239,11 @@
                     </td>
                     <td><?= nl2br($value['address'])?></td>
                     <td>
-                        <img src="image/<?= $value['image']?>">
+                        <img src="image/<?= $value['image']?>" alt="#">
                     </td>
                     <td>
                         <!-- <a href="edit-form.php?id=<?= $value['id']?>">Edit</a> -->
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editModal">
+                        <button onclick="editData(<?= $value['id']?>)" type="button" class="btn btn-primary">
                           Edit
                         </button>
                         <button type="button" class="btn btn-primary" onclick="deleteUser(<?= $value['id']?>)">
@@ -283,7 +327,7 @@
 	  </div>
 	</div>
 
-	<!-- New Modal For Edittind User Values-->
+	<!-- Modal For Edittind User Values-->
 	<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered" role="document">
 	    <div class="modal-content">
@@ -294,7 +338,12 @@
 	        </button>
 	      </div>
 	      <div class="modal-body">
-	        <form action="" method="POST" enctype="multipart/form-data">
+	        <form id="editDataForm" action="" method="POST" enctype="multipart/form-data">
+	        	<div class="form-row">
+	        		<div class="form-group">
+	                	<input id="userId" name="userId" type="text" class="form-control" placeholder="userId" readonly>
+	            	</div>
+	        	</div>
 	          <div class="form-row">
 	            <div class="form-group col-md-6">
 	                <input id="fnameNew" name="fname" type="text" class="form-control" placeholder="First name">
@@ -323,15 +372,15 @@
 	            </div>
 	            <div class="form-group">
 	                <div class="form-check form-check-inline">
-	                  <input class="form-check-input" type="checkbox" id="travellingNew" value="Travelling">
+	                  <input class="form-check-input newHobby" type="checkbox" id="travellingNew" value="Travelling">
 	                  <label class="form-check-label" for="travelling">Travelling</label>
 	                </div>
 	                <div class="form-check form-check-inline">
-	                  <input class="form-check-input" type="checkbox" id="readingNew" value="Reading">
+	                  <input class="form-check-input newHobby" type="checkbox" id="readingNew" value="Reading">
 	                  <label class="form-check-label" for="reading">Reading</label>
 	                </div>
 	                <div class="form-check form-check-inline">
-	                  <input class="form-check-input" type="checkbox" id="swimmingNew" value="Swimming">
+	                  <input class="form-check-input newHobby" type="checkbox" id="swimmingNew" value="Swimming">
 	                  <label class="form-check-label" for="swimming">Swimming</label>
 	                </div>
 	            </div>
@@ -346,8 +395,8 @@
 	        </form>
 	      </div>
 	      <div class="modal-footer">
-	        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-	        <button type="button" class="btn btn-primary">Add User</button>
+	        <button onclick="closeEdit()" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+	        <button id="submitButtonEdit" type="submit" class="btn btn-primary">Update</button>
 	      </div>
 	    </div>
 	  </div>
